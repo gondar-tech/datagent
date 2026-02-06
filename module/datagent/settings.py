@@ -1,14 +1,9 @@
-from pydantic import BaseModel
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 import os
-from dotenv import load_dotenv
 
-# Load env vars
-load_dotenv()
-
-class Settings(BaseModel):
+class Settings(BaseSettings):
     # App
-    APP_NAME: str = "Avaloka Datagent"
     ENV: str = "development"
     DEBUG: bool = True
 
@@ -24,17 +19,14 @@ class Settings(BaseModel):
     
     # Github
     GITHUB_TOKEN: Optional[str] = None
+    
+    # Storage
+    STORAGE_ROOT: str = "module/datagent/db/storage"
 
-def load_settings() -> Settings:
-    return Settings(
-        APP_NAME=os.getenv("APP_NAME", "Avaloka Datagent"),
-        ENV=os.getenv("ENV", "development"),
-        DEBUG=os.getenv("DEBUG", "true").lower() == "true",
-        OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-        GROQ_API_KEY=os.getenv("GROQ_API_KEY"),
-        DATABASE_URL=os.getenv("DATABASE_URL", "sqlite:///datagent.db"),
-        RAY_ADDRESS=os.getenv("RAY_ADDRESS"),
-        GITHUB_TOKEN=os.getenv("GITHUB_TOKEN"),
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
     )
 
-settings = load_settings()
+settings = Settings()

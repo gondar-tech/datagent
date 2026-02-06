@@ -21,7 +21,7 @@ def bootstrap_app():
         ]
     )
     logger = logging.getLogger("datagent.bootstrap")
-    logger.info(f"Bootstrapping {settings.APP_NAME} in {settings.ENV} mode")
+    logger.info(f"Bootstrapping Datagent in {settings.ENV} mode")
     
     # 3. Initialize Database
     try:
