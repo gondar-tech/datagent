@@ -7,8 +7,7 @@ from datagent.settings import settings
 from datagent.bootstrap import bootstrap_app
 from datagent.core.workflow_executor import WorkflowExecutor
 from datagent.core.yaml_workflow_loader import YamlWorkflowLoader
-from datagent.core.context import WorkflowContext
-from datagent.db.repositories.session import SessionRepository
+from datagent.core.storage import SessionStorage
 
 app = typer.Typer()
 
@@ -38,8 +37,8 @@ def run_workflow(
     if not session_id:
         session_id = f"cli-run-{uuid.uuid4()}"
 
-    session_repo = SessionRepository()
-    context = session_repo.load(session_id)
+    session_storage = SessionStorage()
+    context = session_storage.load_context(session_id)
     
     context.state["user_request"] = input_text
     

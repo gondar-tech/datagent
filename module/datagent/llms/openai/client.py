@@ -6,14 +6,15 @@ from langchain_core.outputs import ChatGenerationChunk
 
 from ..base import BaseLLM, LLMResponse, StreamingChunk
 from ..registry import LLMRegistry
+from ...settings import settings
 
 @LLMRegistry.register("openai")
 class OpenAILLM(BaseLLM):
-    def __init__(self, model: str = "gpt-4-turbo", api_key: Optional[str] = None, **kwargs):
+    def __init__(self, model: str = "gpt-4-turbo", api_key: Optional[str] = settings.OPENAI_API_KEY, **kwargs):
         super().__init__(model, api_key, **kwargs)
         self.client = ChatOpenAI(
             model=model,
-            api_key=self.api_key or os.getenv("OPENAI_API_KEY"),
+            api_key=self.api_key,
             streaming=True,
             **kwargs
         )

@@ -5,14 +5,15 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, Base
 
 from ..base import BaseLLM, LLMResponse, StreamingChunk
 from ..registry import LLMRegistry
+from ...settings import settings
 
 @LLMRegistry.register("groq")
 class GroqLLM(BaseLLM):
-    def __init__(self, model: str = "llama3-70b-8192", api_key: Optional[str] = None, **kwargs):
+    def __init__(self, model: str = "llama-3.3-70b-versatile", api_key: Optional[str] = settings.GROQ_API_KEY, **kwargs):
         super().__init__(model, api_key, **kwargs)
         self.client = ChatGroq(
             model_name=model,
-            api_key=self.api_key or os.getenv("GROQ_API_KEY"),
+            api_key=self.api_key,
             streaming=True,
             **kwargs
         )

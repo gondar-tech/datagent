@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Type, Iterator, AsyncIterator
-from langchain_core.messages import SystemMessage, HumanMessage
 
 from ..base import BaseAgent
 from ..schemas import AgentInput, AgentOutput, StreamingEvent, TextChunkEvent, ContextUpdateEvent, AgentOutputEvent
@@ -25,8 +24,7 @@ class PlannerAgent(BaseAgent[PlannerInput, PlannerOutput]):
         llm_config = kwargs.get("llm_config", {"provider": "openai", "model": "gpt-4o"})
         self.llm = LLMRegistry.instantiate(
             provider=llm_config.get("provider", "openai"),
-            model=llm_config.get("model", "gpt-4o"),
-            api_key=llm_config.get("api_key")
+            model=llm_config.get("model", "gpt-4o")
         )
 
     @property
@@ -110,12 +108,12 @@ class PlannerAgent(BaseAgent[PlannerInput, PlannerOutput]):
         """
         
         messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=input_data.user_request)
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": input_data.user_request}
         ]
         
         full_response = ""
-        async for chunk in self.llm.generate_stream(messages):
+        async for chunk in self.llm.generate_chat_stream(messages):
             if chunk.content:
                 full_response += chunk.content
                 

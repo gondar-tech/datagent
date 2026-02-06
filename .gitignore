@@ -10,4 +10,5 @@ venv/
 *.log
 .pytest_cache/
 .mypy_cache/
+storage/
 datagent.db

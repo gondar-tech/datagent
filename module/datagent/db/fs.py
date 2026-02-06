@@ -11,13 +11,7 @@ class FileSystemDB:
     """
     
     def __init__(self, root_dir: str = None):
-        if root_dir is None:
-            # Default to a 'storage' directory inside the db module
-            current_file = Path(__file__).resolve()
-            self.root_dir = current_file.parent / "storage"
-        else:
-            self.root_dir = Path(root_dir)
-            
+        self.root_dir = Path(root_dir or "storage")    
         self._ensure_root()
         
     def _ensure_root(self):

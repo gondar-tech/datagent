@@ -4,6 +4,8 @@ from abc import ABC
 import uuid
 from typing import Dict, Any
 
+from ..core.context import WorkflowContext
+
 @dataclass(frozen=True, kw_only=True)
 class BaseMessage(ABC):
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -21,9 +23,9 @@ class AgentOutput(BaseMessage):
 @dataclass(frozen=True, kw_only=True)
 class StreamingEvent(BaseMessage):
     agent_name: str
-    type: str
+    type: str = "streaming"
     data: dict = field(default_factory=dict)
-    content: str = "" # Optional content for simple events
+    content: str = ""
 
 @dataclass(frozen=True, kw_only=True)
 class TextChunkEvent(StreamingEvent):

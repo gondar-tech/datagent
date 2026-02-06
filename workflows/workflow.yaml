@@ -6,8 +6,8 @@ config:
   service_name: "Avaloka AI"
   service_info: "We help you clean and process your data with ease."
   llm_config:
-    provider: "openai"
-    model: "gpt-4o"
+    provider: "groq"
+    model: "llama-3.3-70b-versatile"
 
 nodes:
   start_node:

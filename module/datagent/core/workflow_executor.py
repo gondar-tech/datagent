@@ -1,8 +1,9 @@
 from typing import Dict, Any, AsyncIterator
 from .context import WorkflowContext
 from .yaml_workflow_loader import WorkflowDefinition
+from .schemas import WorkflowEndEvent, NodeStartEvent, RouterDecisionEvent
 from ..agents.registry import AgentRegistry
-from ..agents.schemas import AgentOutput, StreamingEvent, TextChunkEvent, AgentOutputEvent
+from ..agents.schemas import AgentOutput, StreamingEvent, TextChunkEvent, ContextUpdateEvent, AgentOutputEvent
 
 class WorkflowExecutor:
     def __init__(self, definition: WorkflowDefinition):
@@ -33,13 +34,11 @@ class WorkflowExecutor:
 
             # Check node type
             if node.type == "end":
-                 yield StreamingEvent(
+                yield WorkflowEndEvent(
                     session_id=context.session_id,
-                    agent_name="system",
-                    type="workflow_end",
-                    data={"node_id": node.id}
+                    context=context
                 )
-                 break
+                break
 
             if node.type == "router":
                 # Evaluate condition
@@ -50,27 +49,23 @@ class WorkflowExecutor:
                 # routes is a dict: { "greeting": "greeting_node", "planner": "planner_node" }
                 next_node_id = node.routes.get(str(condition_val), node.default_route)
                 
-                yield StreamingEvent(
+                yield RouterDecisionEvent(
                     session_id=context.session_id,
                     agent_name="system",
-                    type="router_decision",
-                    data={
-                        "node_id": node.id, 
-                        "condition": node.condition, 
-                        "value": str(condition_val), 
-                        "next_node": next_node_id
-                    }
+                    node_id=node.id,
+                    next_node=next_node_id,
+                    condition=node.condition,
+                    value=bool(condition_val)
                 )
 
                 current_node_id = next_node_id
                 continue
 
             # It's an agent node
-            yield StreamingEvent(
+            yield NodeStartEvent(
                 session_id=context.session_id,
-                agent_name="system",
-                type="node_start",
-                data={"node_id": node.id, "agent": node.agent_name}
+                agent_name=node.agent_name,
+                node_id=node.id
             )
 
             agent_inputs = self._resolve_inputs(node.input_mapping, context)
@@ -104,9 +99,9 @@ class WorkflowExecutor:
                 yield event
                 
                 # Capture context updates from agent
-                if event.type == "context_update" and isinstance(event.data, dict) and "context" in event.data:
+                if isinstance(event, ContextUpdateEvent):
                     # Merge update into current context
-                    updates = event.data["context"]
+                    updates = event.context
                     # If updates is a dict of key-values, we assume they go into state
                     # But context.update expects {node_id: output} usually?
                     # We need to support arbitrary variable setting.

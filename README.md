@@ -19,7 +19,7 @@ pip install -r requirements.txt
 
 ### Run a Workflow
 ```bash
-python -m datagent.cli run workflows/training_workflow.yaml
+python -m datagent.cli run workflows/training_workflow.yaml --input $USER_PROMPT
 ```
 
 ### Start Backend

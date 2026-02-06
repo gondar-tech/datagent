@@ -1,7 +1,7 @@
-from .base import LLMProvider
-from .registry import LLMFactory
+from .base import BaseLLM
+from .registry import LLMRegistry
 
 __all__ = [
-    "LLMProvider",
-    "LLMFactory"
+    "BaseLLM",
+    "LLMRegistry"
 ]

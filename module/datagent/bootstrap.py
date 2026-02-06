@@ -29,7 +29,17 @@ def bootstrap_app():
         logger.info("Database initialized.")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
-        
+
+    # 4. Import all agents to register them
+    import datagent.agents.planner.agent
+    import datagent.agents.greeting.agent
+    import datagent.agents.data_processor.agent
+    import datagent.agents.extra_topic.agent
+    
+    # 5. Import LLMs to register them
+    import datagent.llms.openai.client
+    import datagent.llms.groq.client
+    
     logger.info("Bootstrap complete.")
 
 if __name__ == "__main__":

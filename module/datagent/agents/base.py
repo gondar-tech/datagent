@@ -6,8 +6,9 @@ In = TypeVar("In", bound=AgentInput)
 Out = TypeVar("Out", bound=AgentOutput)
 
 class BaseAgent(ABC, Generic[In, Out]):
-    def __init__(self, name: str):
+    def __init__(self, name: str, **kwargs):
         self.name = name
+        self.config = kwargs
 
     @property
     @abstractmethod
