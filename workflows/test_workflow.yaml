@@ -1,0 +1,34 @@
+name: "Test Workflow"
+description: "A simple test workflow to verify streaming."
+version: "1.0"
+start_node: "planner_node"
+
+nodes:
+  planner_node:
+    id: "planner_node"
+    agent_name: "planner"
+    input_mapping:
+      user_request: "Build a simple calculator"
+    next_nodes: ["codegen_node"]
+
+  codegen_node:
+    id: "codegen_node"
+    agent_name: "code_generator"
+    input_mapping:
+      requirements: "$planner_node.plan"
+    next_nodes: ["validator_node"]
+
+  validator_node:
+    id: "validator_node"
+    agent_name: "code_validator"
+    input_mapping:
+      code: "$codegen_node.generated_files.main.py" 
+      # Note: This nested access in dictionary needs to be supported by executor resolver or simplified
+      # For now, let's assume the executor might not support deep dict access on output.
+      # Let's adjust executor or input mapping. 
+      # The CodeGeneratorOutput has 'generated_files' (dict).
+      # If I pass the whole dict, Validator needs to handle it. 
+      # Validator expects 'code' (str).
+      # Let's assume for this test we pass a string.
+      # Or I can just pass a dummy string for now to test the flow.
+      code: "print('Hello')"

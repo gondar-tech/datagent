@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datagent-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: datagent-inference
+  template:
+    metadata:
+      labels:
+        app: datagent-inference
+    spec:
+      containers:
+      - name: inference
+        image: datagent:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_PATH
+          value: "/models/v1"

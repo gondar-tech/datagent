@@ -1,0 +1,8 @@
+name: "Example Workflow"
+start_node: "greeting_node"
+
+nodes:
+  - id: "greeting_node"
+    agent: "greeting"
+    inputs:
+      name: "New User"

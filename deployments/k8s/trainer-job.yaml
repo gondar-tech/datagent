@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: datagent-trainer-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: trainer
+        image: datagent:latest
+        command: ["python", "-m", "datagent.cli", "run", "workflows/training_workflow.yaml"]
+        env:
+        - name: RAY_ADDRESS
+          value: "ray://datagent-ray-cluster-head-svc:10001"
+      restartPolicy: Never

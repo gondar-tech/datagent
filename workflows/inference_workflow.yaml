@@ -1,0 +1,9 @@
+name: "Inference Workflow"
+start_node: "inferencer_node"
+
+nodes:
+  - id: "inferencer_node"
+    agent: "inferencer"
+    inputs:
+      model_uri: "models:/resnet50/1"
+      input_data: "image.jpg"

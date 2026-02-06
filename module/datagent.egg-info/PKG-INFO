@@ -1,0 +1,27 @@
+Metadata-Version: 2.4
+Name: datagent
+Version: 0.1.0
+Summary: A production-grade multi-agent framework for Avaloka AI
+Author-email: Avaloka AI <contact@avaloka.ai>
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: click>=8.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: aiohttp>=3.8
+Requires-Dist: pydantic>=2.0
+Provides-Extra: ray
+Requires-Dist: ray[default]>=2.0; extra == "ray"
+Provides-Extra: k8s
+Requires-Dist: kubernetes>=26.0; extra == "k8s"
+Provides-Extra: llm
+Requires-Dist: openai>=1.0; extra == "llm"
+Requires-Dist: chromadb>=0.4; extra == "llm"
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: isort; extra == "dev"
+Requires-Dist: mypy; extra == "dev"

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datagent"
+version = "0.1.0"
+description = "A production-grade multi-agent framework for Avaloka AI"
+authors = [
+  { name="Avaloka AI", email="contact@avaloka.ai" },
+]
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "click>=8.0",
+    "pyyaml>=6.0",
+    "sqlalchemy>=2.0",
+    "aiohttp>=3.8",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+ray = ["ray[default]>=2.0"]
+k8s = ["kubernetes>=26.0"]
+llm = ["openai>=1.0", "chromadb>=0.4", "langchain>=0.1.0", "langchain-openai>=0.1.0", "langchain-groq>=0.1.0", "langchain-community>=0.0.30", "tiktoken>=0.6.0", "faiss-cpu>=1.7.0"]
+dev = ["pytest", "black", "isort", "mypy"]
+
+[project.scripts]
+datagent = "datagent.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["module"]
+include = ["datagent*"]
