@@ -1,15 +1,15 @@
 from typing import Dict, Any, AsyncIterator
 from .context import WorkflowContext
 from .yaml_workflow_loader import WorkflowDefinition
-from .schemas import WorkflowEndEvent, NodeStartEvent, RouterDecisionEvent
+from .schemas import WorkflowEndEvent, NodeStartEvent, RouterDecisionEvent, NodeEndEvent
 from ..agents.registry import AgentRegistry
-from ..agents.schemas import AgentOutput, StreamingEvent, TextChunkEvent, ContextUpdateEvent, AgentOutputEvent
+from ..agents.schemas import AgentOutput, StreamingEvent, ContextUpdateEvent, AgentOutputEvent, AssistantMessage, BasePrompt, UserMessage
 
 class WorkflowExecutor:
     def __init__(self, definition: WorkflowDefinition):
         self.definition = definition
 
-    async def run(self, initial_context: WorkflowContext) -> WorkflowContext:
+    async def run(self, prompt: BasePrompt, initial_context: WorkflowContext) -> WorkflowContext:
         """
         Runs the workflow non-interactively, gathering all results.
         """
@@ -18,13 +18,18 @@ class WorkflowExecutor:
         # But we can reconstruct the logic for `run` or just iterate over the stream and look for context updates.
         
         context = initial_context
-        async for event in self.run_stream(initial_context):
+        async for event in self.run_stream(prompt, initial_context):
             if event.type == "context_update" and isinstance(event.data, dict) and "context" in event.data:
                 context = event.data["context"]
         return context
 
-    async def run_stream(self, initial_context: WorkflowContext) -> AsyncIterator[StreamingEvent]:
-        context = initial_context
+    async def run_stream(self, prompt: BasePrompt, initial_context: WorkflowContext) -> AsyncIterator[StreamingEvent]:
+        context = initial_context.add_history(
+            UserMessage(
+                session_id=initial_context.session_id,
+                content=prompt.query
+            )
+        )
         current_node_id = self.definition.start_node
 
         while current_node_id:
@@ -36,6 +41,7 @@ class WorkflowExecutor:
             if node.type == "end":
                 yield WorkflowEndEvent(
                     session_id=context.session_id,
+                    agent_name="system",
                     context=context
                 )
                 break
@@ -55,7 +61,7 @@ class WorkflowExecutor:
                     node_id=node.id,
                     next_node=next_node_id,
                     condition=node.condition,
-                    value=bool(condition_val)
+                    value=condition_val
                 )
 
                 current_node_id = next_node_id
@@ -89,7 +95,12 @@ class WorkflowExecutor:
             # Instantiate agent with config
             agent = AgentRegistry.instantiate(node.agent_name, agent_id=node.id, **final_config)
             
-            typed_input = agent.input_type(session_id=context.session_id, **agent_inputs)
+            typed_input = agent.input_type(
+                session_id=context.session_id,
+                prompt=prompt,
+                history=context.history,
+                **agent_inputs
+            )
             
             # Variable to capture the final output from the stream
             final_output: AgentOutput = None
@@ -129,32 +140,25 @@ class WorkflowExecutor:
             
             # Add to history
             context = context.update({node.id: output})
-            context = context.add_history({
-                "node_id": node.id,
-                "agent": node.agent_name,
-                "input": agent_inputs,
-                "output": output
-            })
+            context = context.add_history(output)
 
-            yield StreamingEvent(
+            yield NodeEndEvent(
                 session_id=context.session_id,
-                agent_name="system",
-                type="node_end",
-                data={"node_id": node.id, "output": str(output)}
-            )
-            
-            # Emit context update event for the system to know state changed
-            yield StreamingEvent(
-                session_id=context.session_id,
-                agent_name="system",
-                type="context_update",
-                data={"context": context}
+                agent_name=node.agent_name,
+                node_id=node.id,
+                output=output
             )
 
             if node.next_nodes:
                 current_node_id = node.next_nodes[0]
             else:
                 current_node_id = None
+        
+        yield ContextUpdateEvent(
+            session_id=context.session_id,
+            agent_name="system",
+            context=context
+        )
 
     def _resolve_inputs(self, mapping: Dict[str, Any], context: WorkflowContext) -> Dict[str, Any]:
         inputs = {}

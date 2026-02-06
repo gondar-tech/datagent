@@ -1,5 +1,6 @@
 from typing import Optional, List, Any, Dict
 from ...core.context import WorkflowContext
+from ...core.serialization import serialize, deserialize
 from ..fs import db, FileSystemDB
 
 class SessionRepository:
@@ -15,8 +16,8 @@ class SessionRepository:
         """Save a workflow context session."""
         data = {
             "session_id": context.session_id,
-            "state": context.state,
-            "history": context.history
+            "state": serialize(context.state),
+            "history": serialize(context.history)
         }
         self.db.save(self.COLLECTION, context.session_id, data)
 
@@ -29,8 +30,8 @@ class SessionRepository:
         if data:
             return WorkflowContext(
                 session_id=data.get("session_id", session_id),
-                state=data.get("state", {}),
-                history=data.get("history", [])
+                state=deserialize(data.get("state", {})),
+                history=deserialize(data.get("history", []))
             )
         return WorkflowContext(session_id=session_id)
 

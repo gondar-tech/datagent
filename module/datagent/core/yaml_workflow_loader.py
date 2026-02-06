@@ -103,7 +103,7 @@ class YamlWorkflowLoader:
         return WorkflowNode(
             id=node_data.get('id'),
             type=node_data.get('type', 'agent'),
-            agent_name=node_data.get('agent_id') or node_data.get('agent_name') or node_data.get('agent'),
+            agent_name=node_data.get('agent') or node_data.get('agent_name') or node_data.get('agent_id'),
             input_mapping=node_data.get('input_mapping') or node_data.get('inputs', {}),
             next_nodes=next_nodes,
             condition=node_data.get('condition'),

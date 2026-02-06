@@ -1,67 +1,122 @@
-from ast import Return
 import typer
 import asyncio
 import uuid
+import sys
 from typing import Optional
+from rich.console import Console
+from rich.prompt import Prompt
+from rich.panel import Panel
 from datagent.settings import settings
 from datagent.bootstrap import bootstrap_app
 from datagent.core.workflow_executor import WorkflowExecutor
 from datagent.core.yaml_workflow_loader import YamlWorkflowLoader
 from datagent.core.storage import SessionStorage
+from datagent.agents.schemas import BasePrompt
 
 app = typer.Typer()
+console = Console()
 
 @app.command()
 def info():
     """Display application information."""
-    typer.echo(f"Env: {settings.ENV}")
-    typer.echo(f"Debug: {settings.DEBUG}")
+    console.print(Panel(f"Environment: {settings.ENV}\nDebug Mode: {settings.DEBUG}", title="Datagent Info", border_style="blue"))
 
 @app.command()
-def run_workflow(
-    workflow_path: str = typer.Argument(..., help="Path to workflow YAML file"),
-    input_text: str = typer.Option(..., "--input", "-i", help="Initial user input"),
+def run(
+    workflow_path: str = typer.Argument("workflows/workflow.yaml", help="Path to workflow YAML file"),
+    input_text: str = typer.Option(..., "--input", "-i", help="Initial user input."),
     session_id: Optional[str] = typer.Option(None, "--session-id", "-s", help="Session ID"),
-    stream: bool = typer.Option(True, "--stream/--no-stream", help="Stream output tokens")
+    stream: bool = typer.Option(True, "--stream/--no-stream", help="Stream output tokens"),
+    user_name: str = typer.Option("CLI User", "--name", "-n", help="User name"),
+    user_email: str = typer.Option("cli@datagent.ai", "--email", "-e", help="User email")
 ):
     """Run a workflow from a YAML file."""
     bootstrap_app()
     
     loader = YamlWorkflowLoader()
     try:
-        wf = loader.load(workflow_path)
+        workflow_def = loader.load(workflow_path)
     except Exception as e:
-        typer.echo(f"Error loading workflow: {e}", err=True)
-        Return
+        console.print(f"[bold red]Error loading workflow:[/bold red] {e}")
+        raise typer.Exit(code=1)
 
+    # Use provided session_id or generate one
     if not session_id:
         session_id = f"cli-run-{uuid.uuid4()}"
 
     session_storage = SessionStorage()
-    context = session_storage.load_context(session_id)
     
-    context.state["user_request"] = input_text
-    
-    executor = WorkflowExecutor(wf)
-    
-    async def _run():
-        print(f"Starting workflow: {wf.name} (Session: {session_id})")
-        async for event in executor.run_stream(context):
-            if event.type == "node_start":
-                print(f"NODE: {event.data['node_id']} ({event.data['agent']})")
-            elif event.type == "router_decision":
-                print(f"ROUTER: {event.data['node_id']} -> {event.data['next_node']} (condition: {event.data['value']})")
-            elif event.type == "text_chunk":
-                if stream:
-                    print(event.text, end="", flush=True)
-            elif event.type == "node_end":
-                if not stream:
-                    print(f"OUTPUT: {event.data.get('output')}")
-                print("\n") # Newline after chunks
-            elif event.type == "workflow_end":
-                print("WORKFLOW END")
+    async def run():
+        try:
+            console.print(f"\n[bold cyan]--- Workflow Session: {session_id} ---[/bold cyan]")
+            console.print(f"[bold]User Input:[/bold] {input_text}")
 
-    asyncio.run(_run())
+            # 2. Load Context
+            current_context = session_storage.load_context(session_id)
+            console.print(f"[dim]Loaded session history: {len(current_context.history)} items[/dim]")
+
+            # 3. Prepare Executor
+            executor = WorkflowExecutor(workflow_def)
+            prompt = BasePrompt(
+                name=user_name,
+                email=user_email,
+                query=input_text
+            )
+
+            # 4. Execute
+            console.print("[bold]Starting Workflow Execution...[/bold]")
+            try:
+                async for event in executor.run_stream(prompt, current_context):
+                    if event.type == "node_start":
+                        node_id = event.node_id
+                        agent_name = event.data.get('agent', 'unknown')
+                        console.print(Panel(f"Starting Node: [bold]{node_id}[/bold] (Agent: {agent_name})", border_style="blue"))
+                    
+                    elif event.type == "node_end":
+                        console.print(f"[dim]Node {event.node_id} finished.[/dim]")
+                    
+                    elif event.type == "router_decision":
+                            console.print(f"[bold magenta]Router Decision:[/bold magenta] {event.condition} = {event.value} -> {event.next_node}")
+                    
+                    elif event.type == "text_chunk":
+                        content = event.content
+                        role = getattr(event, "role", "assistant")
+                        style = "green"
+                        if role == "agent":
+                            style = "dim"  # gray
+                        elif role == "assistant":
+                            style = "green"
+                            
+                        if content and stream:
+                            console.print(content, style=style, end="")
+                    
+                    elif event.type == "tool_start":
+                        console.print(f"[yellow]Tool Call:[/yellow] {event.data.get('tool_name')}")
+                    
+                    elif event.type == "tool_end":
+                        console.print(f"[dim]Tool Result:[/dim] {event.data.get('output')}")
+                    
+                    elif event.type == "context_update":
+                        console.print(f"[dim]Context Update:[/dim] {event}")
+                        updated_context = event.context
+                        session_storage.save_context(updated_context)
+                        current_context = updated_context
+
+                    elif event.type == "workflow_end":
+                        console.print(f"\n[bold green]Workflow Ended[/bold green]")
+
+                console.print("\n[bold green]Workflow Completed Successfully.[/bold green]")
+                console.print(f"[dim]Session History Items: {len(current_context.history)}[/dim]")
+
+            except Exception as e:
+                console.print(f"\n[bold red]Workflow Runtime Error:[/bold red] {e}")
+
+        except KeyboardInterrupt:
+            console.print("\n[bold yellow]Interrupted by user. Exiting...[/bold yellow]")
+        except Exception as e:
+            console.print(f"\n[bold red]System Error:[/bold red] {e}")
+
+    asyncio.run(run())
 
 if __name__ == "__main__":
     app()

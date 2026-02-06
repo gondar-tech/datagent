@@ -1,4 +1,8 @@
-from ..agents.schemas import StreamingEvent
+from __future__ import annotations
+
+from dataclasses import dataclass
+from .context import WorkflowContext
+from ..agents.schemas import StreamingEvent, AgentOutput
 
 @dataclass(frozen=True, kw_only=True)
 class WorkflowEndEvent(StreamingEvent):
@@ -17,4 +21,9 @@ class RouterDecisionEvent(StreamingEvent):
 class NodeStartEvent(StreamingEvent):
     type: str = "node_start"
     node_id: str
-    agent: str
+
+@dataclass(frozen=True, kw_only=True)
+class NodeEndEvent(StreamingEvent):
+    type: str = "node_end"
+    node_id: str
+    output: AgentOutput

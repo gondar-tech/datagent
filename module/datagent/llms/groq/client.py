@@ -22,7 +22,7 @@ class GroqLLM(BaseLLM):
         lc_messages = []
         for msg in messages:
             role = msg.get("role")
-            content = msg.get("content")
+            content = msg.get("content") or ""
             if role == "system":
                 lc_messages.append(SystemMessage(content=content))
             elif role == "user":
@@ -37,8 +37,7 @@ class GroqLLM(BaseLLM):
         return await self.generate_chat([{"role": "user", "content": prompt}], **kwargs)
 
     async def generate_chat(self, messages: List[Dict[str, str]], **kwargs) -> LLMResponse:
-        lc_messages = self._convert_messages(messages)
-        response = await self.client.ainvoke(lc_messages, **kwargs)
+        response = await self.client.ainvoke(messages, **kwargs)
         
         usage = response.response_metadata.get("token_usage")
         tool_calls = None

@@ -9,11 +9,11 @@ from ...llms.registry import LLMRegistry
 
 @dataclass(frozen=True, kw_only=True)
 class GreetingInput(AgentInput):
-    user_message: str
+    pass
 
 @dataclass(frozen=True, kw_only=True)
 class GreetingOutput(AgentOutput):
-    response: str
+    role: str = "assistant"
 
 @AgentRegistry.register("greeting")
 class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
@@ -24,13 +24,12 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
         llm_config = kwargs.get("llm_config", {"provider": "openai", "model": "gpt-4o"})
         self.llm = LLMRegistry.instantiate(
             provider=llm_config.get("provider", "openai"),
-            model=llm_config.get("model", "gpt-4o"),
-            api_key=llm_config.get("api_key") # Optional, usually env var
+            model=llm_config.get("model", "gpt-4o")
         )
         
         # 2. Configurable Service Info
-        self.service_name = kwargs.get("service_name", "Avaloka Datagent")
-        self.service_info = kwargs.get("service_info", "automated data workflows and code generation")
+        self.service_name = kwargs.get("service_name", "datagent")
+        self.service_info = kwargs.get("service_info", "data science multi-agent framework")
 
     @property
     def input_type(self) -> Type[GreetingInput]:
@@ -73,7 +72,7 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
         system_prompt = f"""
         You are the Greeting Agent for {self.service_name}.
         Your role is to:
-        1. Warmly welcome the user.
+        1. Warmly welcome the user ({input_data.prompt.name}).
         2. Briefly explain our service ({self.service_info}) in short sentences.
         3. Guide the user to start using the service (e.g., "You can ask me to process a dataset or generate a script.").
         
@@ -81,15 +80,17 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
         """
         
         messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=input_data.user_message)
+            {"role": "system", "content": system_prompt}
+        ] + [
+            {"role": message.role, "content": message.content} for message in input_data.history if message.role != "agent"
         ]
         
         response_text = ""
-        async for chunk in self.llm.generate_stream(messages):
+        async for chunk in self.llm.generate_chat_stream(messages):
             if chunk.content:
                 response_text += chunk.content
                 yield TextChunkEvent(
+                    role="assistant",
                     session_id=input_data.session_id,
                     agent_name=self.name,
                     content=chunk.content
@@ -100,6 +101,6 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
             agent_name=self.name,
             output=GreetingOutput(
                 session_id=input_data.session_id,
-                response=response_text
+                content=response_text
             )
         )

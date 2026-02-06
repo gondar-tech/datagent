@@ -8,7 +8,7 @@ from ...llms.registry import LLMRegistry
 
 @dataclass(frozen=True, kw_only=True)
 class PlannerInput(AgentInput):
-    user_request: str
+    pass
 
 @dataclass(frozen=True, kw_only=True)
 class PlannerOutput(AgentOutput):
@@ -108,8 +108,9 @@ class PlannerAgent(BaseAgent[PlannerInput, PlannerOutput]):
         """
         
         messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": input_data.user_request}
+            {"role": "system", "content": system_prompt}
+        ] + [
+            {"role": message.role, "content": message.content} for message in input_data.history if message.role != "agent"
         ]
         
         full_response = ""
@@ -122,13 +123,6 @@ class PlannerAgent(BaseAgent[PlannerInput, PlannerOutput]):
         for line in full_response.split('\n'):
             if line.strip().startswith("ACTION:"):
                 next_action = line.strip().replace("ACTION:", "").strip().lower()
-                
-        # Emit context update event
-        yield ContextUpdateEvent(
-            session_id=input_data.session_id,
-            agent_name=self.name,
-            context={"next_agent": next_action}
-        )
         
         # Emit final output event
         yield AgentOutputEvent(

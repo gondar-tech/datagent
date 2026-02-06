@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Type, Iterator, AsyncIterator
-from langchain_core.messages import SystemMessage, HumanMessage
 
 from ..base import BaseAgent
 from ..schemas import AgentInput, AgentOutput, StreamingEvent, TextChunkEvent, AgentOutputEvent

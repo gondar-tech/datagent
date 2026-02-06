@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
 import uuid
+from ..agents.schemas import BaseMessage
 
 @dataclass(frozen=True)
 class WorkflowContext:
     session_id: str
     state: Dict[str, Any] = field(default_factory=dict)
-    history: list = field(default_factory=list)
+    history: list[BaseMessage] = field(default_factory=list)
     
     def update(self, updates: Dict[str, Any]) -> 'WorkflowContext':
         new_state = self.state.copy()

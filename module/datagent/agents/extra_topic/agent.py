@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Type, Iterator, AsyncIterator
-from langchain_core.messages import SystemMessage, HumanMessage
 
 from ..base import BaseAgent
 from ..schemas import AgentInput, AgentOutput, StreamingEvent, TextChunkEvent, AgentOutputEvent
@@ -85,12 +84,12 @@ class ExtraTopicAgent(BaseAgent[ExtraTopicInput, ExtraTopicOutput]):
         """
         
         messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=input_data.user_query)
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": input_data.user_query}
         ]
         
         response_text = ""
-        async for chunk in self.llm.generate_stream(messages):
+        async for chunk in self.llm.generate_chat_stream(messages):
             if chunk.content:
                 response_text += chunk.content
                 yield TextChunkEvent(
