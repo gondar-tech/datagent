@@ -16,3 +16,7 @@ class AgentRegistry:
         if agent_type not in cls._registry:
             raise ValueError(f"Agent type {agent_type} not found")
         return cls._registry[agent_type](**kwargs)
+
+    @classmethod
+    def list_agents(cls):
+        return list(cls._registry.keys())

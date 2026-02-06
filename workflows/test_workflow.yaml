@@ -1,34 +1,81 @@
-name: "Test Workflow"
-description: "A simple test workflow to verify streaming."
+name: "Smart Routing Workflow"
 version: "1.0"
-start_node: "planner_node"
+description: "Workflow that routes user requests to Greeting, DataProcessing, or ExtraTopic agents using an LLM Planner."
+
+config:
+  service_name: "Avaloka AI"
+  service_info: "We help you clean and process your data with ease."
+  llm_config:
+    provider: "openai"
+    model: "gpt-4o"
 
 nodes:
-  planner_node:
-    id: "planner_node"
-    agent_name: "planner"
-    input_mapping:
-      user_request: "Build a simple calculator"
-    next_nodes: ["codegen_node"]
+  start_node:
+    id: "start_node"
+    type: "agent"
+    agent_id: "planner"
+    inputs:
+      user_request: "$user_request"
 
-  codegen_node:
-    id: "codegen_node"
-    agent_name: "code_generator"
-    input_mapping:
-      requirements: "$planner_node.plan"
-    next_nodes: ["validator_node"]
+  router_node:
+    id: "router_node"
+    type: "router"
+    condition: "$next_agent"
 
-  validator_node:
-    id: "validator_node"
-    agent_name: "code_validator"
-    input_mapping:
-      code: "$codegen_node.generated_files.main.py" 
-      # Note: This nested access in dictionary needs to be supported by executor resolver or simplified
-      # For now, let's assume the executor might not support deep dict access on output.
-      # Let's adjust executor or input mapping. 
-      # The CodeGeneratorOutput has 'generated_files' (dict).
-      # If I pass the whole dict, Validator needs to handle it. 
-      # Validator expects 'code' (str).
-      # Let's assume for this test we pass a string.
-      # Or I can just pass a dummy string for now to test the flow.
-      code: "print('Hello')"
+  greeting_node:
+    id: "greeting_node"
+    type: "agent"
+    agent_id: "greeting"
+    inputs:
+      user_message: "$user_request"
+
+  data_processing_node:
+    id: "data_processing_node"
+    type: "agent"
+    agent_id: "data_processor"
+    inputs:
+      user_request: "$user_request"
+
+  extra_topic_node:
+    id: "extra_topic_node"
+    type: "agent"
+    agent_id: "extra_topic"
+    config:
+      service_info: "We handle big data so you don't have to!"
+    inputs:
+      user_query: "$user_request"
+
+  end_node:
+    id: "end_node"
+    type: "end"
+
+edges:
+  - from: start_node
+    to: router_node
+
+  - from: router_node
+    to: greeting_node
+    condition: "greeting"
+
+  - from: router_node
+    to: data_processing_node
+    condition: "data_processor"
+
+  - from: router_node
+    to: extra_topic_node
+    condition: "extra_topic"
+
+  - from: router_node
+    to: extra_topic_node
+    default: true
+
+  - from: greeting_node
+    to: end_node
+
+  - from: data_processing_node
+    to: end_node
+
+  - from: extra_topic_node
+    to: end_node
+
+start_node: "start_node"

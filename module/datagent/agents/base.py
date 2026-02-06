@@ -23,11 +23,14 @@ class BaseAgent(ABC, Generic[In, Out]):
     async def a_run(self, input_data: In) -> Out:
         pass
 
+    @abstractmethod
     def run(self, input_data: In) -> Out:
-        raise NotImplementedError("Sync run not implemented")
+        pass
 
+    @abstractmethod
     def stream(self, input_data: In) -> Iterator[StreamingEvent]:
-        raise NotImplementedError("Stream not implemented")
+        pass
 
+    @abstractmethod
     async def a_stream(self, input_data: In) -> AsyncIterator[StreamingEvent]:
-        raise NotImplementedError("Async stream not implemented")
+        pass

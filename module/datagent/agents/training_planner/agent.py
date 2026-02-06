@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Type
+from typing import Type, Iterator, AsyncIterator
 from ..base import BaseAgent
-from ..schemas import AgentInput, AgentOutput
+from ..schemas import AgentInput, AgentOutput, StreamingEvent, TextChunkEvent
 from ..registry import AgentRegistry
 
 @dataclass(frozen=True, kw_only=True)
@@ -47,4 +47,34 @@ class TrainingPlannerAgent(BaseAgent[TrainingPlannerInput, TrainingPlannerOutput
         return TrainingPlannerOutput(
             session_id=input_data.session_id,
             plan=plan
+        )
+
+    def run(self, input_data: TrainingPlannerInput) -> TrainingPlannerOutput:
+        import asyncio
+        return asyncio.run(self.a_run(input_data))
+
+    def stream(self, input_data: TrainingPlannerInput) -> Iterator[StreamingEvent]:
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        agen = self.a_stream(input_data)
+        try:
+            while True:
+                try:
+                    yield loop.run_until_complete(agen.__anext__())
+                except StopAsyncIteration:
+                    break
+        finally:
+            loop.close()
+
+    async def a_stream(self, input_data: TrainingPlannerInput) -> AsyncIterator[StreamingEvent]:
+        yield TextChunkEvent(
+            session_id=input_data.session_id,
+            agent_name=self.name,
+            content=f"Analyzing training goal: {input_data.goal}...\n"
+        )
+        yield TextChunkEvent(
+            session_id=input_data.session_id,
+            agent_name=self.name,
+            content="Plan generated.\n"
         )

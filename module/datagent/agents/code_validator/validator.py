@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Type, List, AsyncIterator
+from typing import Type, List, AsyncIterator, Iterator
 import tempfile
 import os
 from ..base import BaseAgent
@@ -79,6 +79,24 @@ class CodeValidatorAgent(BaseAgent[ValidatorInput, ValidatorOutput]):
                 test_results=test_output,
                 summary=summary
             )
+
+    def run(self, input_data: ValidatorInput) -> ValidatorOutput:
+        import asyncio
+        return asyncio.run(self.a_run(input_data))
+
+    def stream(self, input_data: ValidatorInput) -> Iterator[StreamingEvent]:
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        agen = self.a_stream(input_data)
+        try:
+            while True:
+                try:
+                    yield loop.run_until_complete(agen.__anext__())
+                except StopAsyncIteration:
+                    break
+        finally:
+            loop.close()
 
     async def a_stream(self, input_data: ValidatorInput) -> AsyncIterator[StreamingEvent]:
         yield TextChunkEvent(

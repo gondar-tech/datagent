@@ -29,6 +29,24 @@ class OrchestratorAgent(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             status="Orchestrated"
         )
 
+    def run(self, input_data: OrchestratorInput) -> OrchestratorOutput:
+        import asyncio
+        return asyncio.run(self.a_run(input_data))
+
+    def stream(self, input_data: OrchestratorInput) -> Iterator[StreamingEvent]:
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        agen = self.a_stream(input_data)
+        try:
+            while True:
+                try:
+                    yield loop.run_until_complete(agen.__anext__())
+                except StopAsyncIteration:
+                    break
+        finally:
+            loop.close()
+
     async def a_stream(self, input_data: OrchestratorInput) -> AsyncIterator[StreamingEvent]:
         # Simulate thinking/planning
         yield TextChunkEvent(

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from abc import ABC
 import uuid
+from typing import Dict, Any
 
 @dataclass(frozen=True, kw_only=True)
 class BaseMessage(ABC):
@@ -36,3 +37,13 @@ class ToolStartEvent(StreamingEvent):
 @dataclass(frozen=True, kw_only=True)
 class ToolEndEvent(StreamingEvent):
     type: str = "tool_end"
+
+@dataclass(frozen=True, kw_only=True)
+class ContextUpdateEvent(StreamingEvent):
+    type: str = "context_update"
+    context: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True, kw_only=True)
+class AgentOutputEvent(StreamingEvent):
+    type: str = "agent_output"
+    output: AgentOutput

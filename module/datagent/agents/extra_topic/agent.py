@@ -8,15 +8,15 @@ from ..registry import AgentRegistry
 from ...llms.registry import LLMRegistry
 
 @dataclass(frozen=True, kw_only=True)
-class GreetingInput(AgentInput):
-    user_message: str
+class ExtraTopicInput(AgentInput):
+    user_query: str
 
 @dataclass(frozen=True, kw_only=True)
-class GreetingOutput(AgentOutput):
+class ExtraTopicOutput(AgentOutput):
     response: str
 
-@AgentRegistry.register("greeting")
-class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
+@AgentRegistry.register("extra_topic")
+class ExtraTopicAgent(BaseAgent[ExtraTopicInput, ExtraTopicOutput]):
     def __init__(self, agent_id: str, **kwargs):
         super().__init__(agent_id, **kwargs)
         
@@ -25,22 +25,21 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
         self.llm = LLMRegistry.instantiate(
             provider=llm_config.get("provider", "openai"),
             model=llm_config.get("model", "gpt-4o"),
-            api_key=llm_config.get("api_key") # Optional, usually env var
+            api_key=llm_config.get("api_key")
         )
         
-        # 2. Configurable Service Info
-        self.service_name = kwargs.get("service_name", "Avaloka Datagent")
-        self.service_info = kwargs.get("service_info", "automated data workflows and code generation")
+        # 2. Configurable Service Info for pivoting
+        self.service_info = kwargs.get("service_info", "Automated data processing, intelligent code generation, and workflow orchestration")
 
     @property
-    def input_type(self) -> Type[GreetingInput]:
-        return GreetingInput
+    def input_type(self) -> Type[ExtraTopicInput]:
+        return ExtraTopicInput
 
     @property
-    def output_type(self) -> Type[GreetingOutput]:
-        return GreetingOutput
+    def output_type(self) -> Type[ExtraTopicOutput]:
+        return ExtraTopicOutput
 
-    async def a_run(self, input_data: GreetingInput) -> GreetingOutput:
+    async def a_run(self, input_data: ExtraTopicInput) -> ExtraTopicOutput:
         result = None
         async for event in self.a_stream(input_data):
             if isinstance(event, AgentOutputEvent):
@@ -48,14 +47,14 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
         
         if result:
             return result
-        # Fallback
-        return GreetingOutput(session_id=input_data.session_id, response="Error: No output from stream")
+        # Fallback if stream didn't yield output (should not happen if implemented correctly)
+        return ExtraTopicOutput(session_id=input_data.session_id, response="Error: No output from stream")
 
-    def run(self, input_data: GreetingInput) -> GreetingOutput:
+    def run(self, input_data: ExtraTopicInput) -> ExtraTopicOutput:
         import asyncio
         return asyncio.run(self.a_run(input_data))
 
-    def stream(self, input_data: GreetingInput) -> Iterator[StreamingEvent]:
+    def stream(self, input_data: ExtraTopicInput) -> Iterator[StreamingEvent]:
         import asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -69,20 +68,25 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
         finally:
             loop.close()
 
-    async def a_stream(self, input_data: GreetingInput) -> AsyncIterator[StreamingEvent]:
+    async def a_stream(self, input_data: ExtraTopicInput) -> AsyncIterator[StreamingEvent]:
         system_prompt = f"""
-        You are the Greeting Agent for {self.service_name}.
-        Your role is to:
-        1. Warmly welcome the user.
-        2. Briefly explain our service ({self.service_info}) in short sentences.
-        3. Guide the user to start using the service (e.g., "You can ask me to process a dataset or generate a script.").
+        You are a helpful assistant for the Avaloka Datagent service.
+        The user has asked a question that is NOT directly related to our core service.
         
-        Keep it friendly, professional, and concise.
+        Your goal is to:
+        1. Answer the user's question helpfully and politely.
+        2. Gently pivot back to explaining the pros of our Datagent service.
+        3. Guide them to use our service.
+        
+        Our Service Highlights:
+        {self.service_info}
+        
+        Keep the response concise but friendly.
         """
         
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=input_data.user_message)
+            HumanMessage(content=input_data.user_query)
         ]
         
         response_text = ""
@@ -98,7 +102,7 @@ class GreetingAgent(BaseAgent[GreetingInput, GreetingOutput]):
         yield AgentOutputEvent(
             session_id=input_data.session_id,
             agent_name=self.name,
-            output=GreetingOutput(
+            output=ExtraTopicOutput(
                 session_id=input_data.session_id,
                 response=response_text
             )

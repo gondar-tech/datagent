@@ -1,0 +1,9 @@
+{
+  "session_id": "test-db-session",
+  "state": {
+    "foo": "bar"
+  },
+  "history": [
+    "User said hello"
+  ]
+}
