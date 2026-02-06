@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Dict, Type, Set
 import logging
 
-from datagent.agents.schemas import BaseMessage
+from ..agents.schemas import BaseMessage
 
 logger = logging.getLogger(__name__)
 

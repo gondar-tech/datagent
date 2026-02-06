@@ -10,11 +10,17 @@ if TYPE_CHECKING:
     from ..core.context import WorkflowContext
 
 @dataclass(frozen=True, kw_only=True)
+class FileData:
+    filename: str
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+    url: str
+
+@dataclass(frozen=True, kw_only=True)
 class BasePrompt(ABC):
     email: str
     name: str
     query: str
-    data_urls: list[str] = field(default_factory=list)
+    files: list[FileData] = field(default_factory=list)
 
 @dataclass(frozen=True, kw_only=True)
 class BaseMessage(ABC):

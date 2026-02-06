@@ -1,6 +1,4 @@
-import os
 import asyncio
-import sys
 import typer
 from rich.console import Console
 from rich.prompt import Prompt
@@ -65,7 +63,7 @@ async def run_test_workflow_async(workflow_file_path: str = None, stream: bool =
                         role = getattr(event, "role", "assistant")
                         style = "green"
                         if role == "agent":
-                            style = "dim"  # gray
+                            style = "dim"
                         elif role == "assistant":
                             style = "green"
                             
@@ -79,10 +77,8 @@ async def run_test_workflow_async(workflow_file_path: str = None, stream: bool =
                         console.print(f"[dim]Tool Result:[/dim] {event.data.get('output')}")
                     
                     elif event.type == "context_update":
-                        # Update our local context reference
                         console.print(f"[dim]Context Update:[/dim] {event}")
                         updated_context = event.context
-                        # Save to storage immediately (or at end)
                         session_storage.save_context(updated_context)
                         current_context = updated_context
 

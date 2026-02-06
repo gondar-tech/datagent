@@ -1,17 +1,15 @@
 import typer
 import asyncio
 import uuid
-import sys
 from typing import Optional
 from rich.console import Console
-from rich.prompt import Prompt
 from rich.panel import Panel
-from datagent.settings import settings
-from datagent.bootstrap import bootstrap_app
-from datagent.core.workflow_executor import WorkflowExecutor
-from datagent.core.yaml_workflow_loader import YamlWorkflowLoader
-from datagent.core.storage import SessionStorage
-from datagent.agents.schemas import BasePrompt
+from .settings import settings
+from .bootstrap import bootstrap_app
+from .core.workflow_executor import WorkflowExecutor
+from .core.yaml_workflow_loader import YamlWorkflowLoader
+from .core.storage import SessionStorage
+from .agents.schemas import BasePrompt
 
 app = typer.Typer()
 console = Console()
@@ -40,7 +38,6 @@ def run(
         console.print(f"[bold red]Error loading workflow:[/bold red] {e}")
         raise typer.Exit(code=1)
 
-    # Use provided session_id or generate one
     if not session_id:
         session_id = f"cli-run-{uuid.uuid4()}"
 
@@ -83,7 +80,7 @@ def run(
                         role = getattr(event, "role", "assistant")
                         style = "green"
                         if role == "agent":
-                            style = "dim"  # gray
+                            style = "dim"
                         elif role == "assistant":
                             style = "green"
                             

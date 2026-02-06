@@ -13,7 +13,6 @@ class PlannerInput(AgentInput):
 @dataclass(frozen=True, kw_only=True)
 class PlannerOutput(AgentOutput):
     next_action: str
-    reasoning: str
 
 @AgentRegistry.register("planner")
 class PlannerAgent(BaseAgent[PlannerInput, PlannerOutput]):
@@ -131,6 +130,6 @@ class PlannerAgent(BaseAgent[PlannerInput, PlannerOutput]):
             output=PlannerOutput(
                 session_id=input_data.session_id,
                 next_action=next_action,
-                reasoning=full_response
+                content=full_response
             )
         )
